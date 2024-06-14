@@ -1,6 +1,6 @@
 /*
-@ASSESSME.USERID: userID
-@ASSESSME.AUTHOR: author, list of authors
+@ASSESSME.USERID: nm4680
+@ASSESSME.AUTHOR: Nadja Matkovic
 @ASSESSME.LANGUAGE: JAVA
 @ASSESSME.DESCRIPTION: ASS91
 @ASSESSME.ANALYZE: YES
@@ -11,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -27,7 +28,7 @@ import javafx.stage.Stage;
 public class Filters extends Application {
 
     private List<String[]> data;
-    private List<List<Label>> lables;
+    private List<List<Label>> labels;
 
     @Override
     public void start (Stage stage) throws Exception {
@@ -35,8 +36,6 @@ public class Filters extends Application {
         List<String> args = getParameters ().getRaw ();
         FileReader file = new FileReader (args.get (0));
         BufferedReader fin = new BufferedReader (file);
-        int row = 0;
-        int col = 0;
 
         // If the data is too big, add scroll bars
         ScrollPane scroller = new ScrollPane ();
@@ -44,60 +43,52 @@ public class Filters extends Application {
         
         GridPane pane = new GridPane ();
         data = new ArrayList<> ();
-        lables = new ArrayList<> ();
+        labels = new ArrayList<> ();
 
         // Use the header to create the first row as buttons.
-        String[] header = fin.readLine ().strip ().split (","); 
-        for (String value : header) {
-            Button button = new Button (value);
+        List<String> lines = fin.lines().collect(Collectors.toList());
+        String[] header = lines.get(0).split(",");
+        for (int i = 0; i < header.length; i++) {
+            int column = i;
 
-            pane.add (button, col, row);
-            col++;
+            Button button = new Button(header[i]);
+            button.setOnAction(e -> {
+                System.out.println("Button " + header[column] + " pressed.");
+                data.sort((a, b) -> a[column].compareTo(b[column]));
+                update();
+            });
+
+            pane.add(button, i, 0);
         }
-        row++;
 
-        // Use the rest of the data to fill in the labels.
-        String line = fin.readLine (); 
-        while (line != null) {
-            String[] record = line.strip ().split (",");
-            // Store all the data in a list so it can be easily sorted
-            // later on (List.sort)
-            data.add (record);
-            col = 0;
-            lables.add (new ArrayList<>());
-            for (String value : record) {
-                Label label = new Label (value);
-                // Keep track of all the labels so they can be adjusted without
-                // haveing to find them in the Grid which can be a pain.
-                lables.get (row - 1).add (label);
-                pane.add (label, col, row);
-                col++;    
+        for (int i = 0; i < lines.size; i++) {
+            String[] record = lines.get(i).split(",");
+            data.add(record);
+            labels.add(new ArrayList<>());
+            for (int j = 0; j < record.length; j++) {
+                Label label = new Label(record[j]);
+                labels.get(i-1).add(label);
+                pane.add(label,j,i);
             }
-            row++;
-            line = fin.readLine (); 
         }
-        fin.close ();
+        fin.close();
 
-        scroller.setContent (pane);
-        Scene scene = new Scene (scroller);
-        stage.setScene (scene);
-        stage.show ();
-        
-    }
+        scroller.setContent(pane);
+        Scene scene = new Scene(scroller);
+        stage.setScene(scene);
+        stage.show();
+            
+        }
 
     /**
      * Helper funciton used to update all the labels based on the 
      * data. It should be called whenever the data changes.
      */
     private void update () {
-        int row = 0;
-        for (List<Label> label_row : lables) {
-            int col = 0;
-            for (Label label : label_row) {
-                label.setText (data.get (row) [col]);
-                col++;
+        for (int i = 0; i < data.size(); i++) {
+            for (int j = 0; j < data.get(i).length; j++) {
+                labels.get(i).get(j).setText(data.get(i)[j]);
             }
-            row++;
         }
     }
 
